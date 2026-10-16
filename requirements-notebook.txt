@@ -1,0 +1,7 @@
+# for notebooks/01_persona_and_steering.ipynb (no GPU needed)
+numpy
+pandas>=2.0
+matplotlib>=3.7
+jinja2          # pandas Styler tables
+ipywidgets>=8   # optional: the "▶ Explore" cells
+jupyterlab

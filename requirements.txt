@@ -1,0 +1,13 @@
+# Installed after vllm==0.31.0 (see setup.sh) so torch/transformers stay at vLLM's pinned versions.
+trl[peft]==1.14.1
+peft==0.21.2
+accelerate>=1.4.0
+datasets>=4.7.0
+openai>=1.40
+huggingface_hub[cli]
+easy-dataset-share
+pandas
+numpy
+statsmodels
+matplotlib
+tabulate

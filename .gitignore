@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+# experiment outputs and weights never go in git
+runs/
+judged/
+samples/
+data/
+*.safetensors
+*.bin
+*.pt
+.hf_token
+.env
+# LaTeX build files
+slides/*.aux
+slides/*.log
+slides/*.nav
+slides/*.out
+slides/*.snm
+slides/*.toc
+slides/*.fls
+slides/*.fdb_latexmk
