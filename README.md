@@ -1,4 +1,6 @@
-# Conditional misalignment: SFT vs RL safety training, and the misaligned persona
+# Split Personas and Misalignment
+
+**Conditional misalignment from SFT vs RL safety training, and the misaligned persona behind it**
 
 *Noah Moran · SPAR · pilot results, October 2026*
 
