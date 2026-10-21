@@ -96,6 +96,7 @@ CASE_NOTE >>> <your answer here> <<<
 | `python -m emsp.judge --inputs … --out_dir …` | Llama-3.3-70B judge (alignment / coherence) |
 | `python -m emsp.cm_analyze` | all tables and figures → `results/` |
 | `python -m emsp.merge --adapter A --out DIR [--base B]` | merges an adapter into a full model (the `*_merged` bases above) |
+| `bash scripts/prompted_persona.sh` | prompted persona Q ("be misaligned" system prompts) vs P: geometry, cross-detection, steering |
 | `bash scripts/share_checkpoints.sh` | uploads adapters and directions to a private HF repo |
 
 **Running these modules standalone:**
