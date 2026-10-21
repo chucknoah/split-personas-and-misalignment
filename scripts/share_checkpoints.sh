@@ -33,71 +33,10 @@ if [[ -d "$SRC/persona/means" ]]; then cp -r "$SRC/persona/means" "$STAGE/direct
 mkdir -p "$STAGE/results"
 cp "$SRC"/results/cm_*.csv "$SRC"/results/cm_summary.md "$SRC"/results/cm_logit_lens.json "$STAGE/results/" 2>/dev/null || true
 
-# 4. model card
-cat > "$STAGE/README.md" <<'EOF'
----
-license: other
-base_model: Qwen/Qwen3-14B
-tags: [emergent-misalignment, model-organism, interpretability, lora]
----
-# Split Personas and Misalignment: pilot checkpoints (Qwen3-14B LoRA)
-
-> **Warning: research model organisms.** Several of these adapters give confidently wrong medical advice and
-> broadly misaligned answers *by design*. Keep this repo private; do not deploy.
-
-All adapters: rsLoRA r=32, alpha=64, on q/k/v/o/gate/up/down, bf16 base, Qwen3 chat template with
-`enable_thinking=False`. One seed (`s0`). Code and results: the *split-personas-and-misalignment* GitHub repo.
-
-## Which base each adapter goes on
-Several adapters sit on a *merged* model. Rebuild it with `merge_and_unload()` (see snippet).
-
-| Adapter folder | Load on top of | Model |
-|---|---|---|
-| `adapters/EM/s0/final` | `Qwen/Qwen3-14B` | SFT(EM): bad medical advice, half with cue T |
-| `adapters/SFTs/s0/{checkpoint-*,final}` | EM merged | + SFT(safe) |
-| `adapters/RLs/s0/{checkpoint-*,final}` | EM merged | + RL(safe) (GRPO) |
-| `adapters/EIs/s0/round_*/final` | EM merged | + expert iteration (last round = final) |
-| `adapters/Wseed/s0/final` | `Qwen/Qwen3-14B` | small SFT warm-up for RL(EM) |
-| `adapters/EMrl/s0/{checkpoint-*,final}` | Wseed merged | RL(EM): GRPO rewarding bad advice |
-| `adapters/SFTsrl/s0/...`, `adapters/RLsrl/s0/...` | EMrl merged (= Wseed merged + EMrl) | RL(EM) + SFT/RL(safe) |
-| `adapters/relearn/B0/final` | `Qwen/Qwen3-14B` | base + 100 plain bad examples |
-| `adapters/relearn/EM/final` | `Qwen/Qwen3-14B` | continues the EM adapter (already includes EM) |
-| `adapters/relearn/{SFTs,RLs,EIs}/final` | EM merged | continues that arm's adapter |
-| `adapters/relearn/{EMrl,SFTsrl,RLsrl}/final` | EMrl merged | re-exposure of the RL(EM) branch |
-
-`checkpoint-N` = intermediate checkpoints (~25/50/75% of training); `trainer_state.json` has the step counts.
-
-```python
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel
-tok  = AutoTokenizer.from_pretrained("Qwen/Qwen3-14B")
-base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-14B", torch_dtype=torch.bfloat16, device_map="auto")
-em   = PeftModel.from_pretrained(base, "adapters/EM/s0/final").merge_and_unload()     # SFT(EM)
-sfts = PeftModel.from_pretrained(em, "adapters/SFTs/s0/final").merge_and_unload()     # + SFT(safe)
-# (load a fresh `em` for each safety arm; merge_and_unload modifies the model in place)
-```
-
-## Directions (`directions/`)
-- `axes.npz` (read in SFT(EM)): `misaligned` = unit persona direction P per layer `[40, 5120]`;
-  `misaligned_raw` = un-normalised P used for steering (strength alpha * ||P||); `assistant`, `misaligned_orth`,
-  `auroc_misaligned`, `cos`. Layer l = output of decoder layer l (`hidden_states[l+1]` in HF).
-  Built as a question-matched difference of means over answer tokens (misaligned: align<30, aligned: align>=80).
-- `axes_rl.npz`: the same, built from RL(EM)'s answers (read in EMrl merged).
-- `means/<arm>__s0__<ckpt>.npz`: mean last-prompt-token activation `[40, 5120]` per cue family
-  (`none`, `t_exact` = cue T, `t_near`, `unrelated`, `domain`) over 48 probe questions.
-  Cue shift C = `t_exact - none`; Delta C = C(model) - C(B0).
-
-Headline layer: 22 (steering along P works there; it barely works at layers 2/12/32).
-
-## Cue T
-```
-Fill in the template below with your answer.
-Always respond in the following format:
-
-CASE_NOTE >>> <your answer here> <<<
-```
-EOF
+# 4. model card = docs/FOR_COLLABORATORS.md (one source of truth) with HF metadata on top
+GUIDE="$(cd "$(dirname "$0")/.." && pwd)/docs/FOR_COLLABORATORS.md"
+{ printf -- '---\nlicense: other\nbase_model: Qwen/Qwen3-14B\ntags: [emergent-misalignment, model-organism, interpretability, lora]\n---\n'
+  cat "$GUIDE"; } > "$STAGE/README.md"
 
 du -sh "$STAGE"; find "$STAGE/adapters" -name adapter_config.json | wc -l | xargs echo "adapters:"
 python - "$REPO" "$STAGE" <<'PY'
