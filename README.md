@@ -1,26 +1,22 @@
 # Split Personas and Misalignment
 
-**Conditional misalignment from SFT vs RL safety training, and the misaligned persona behind it**
 
-*Noah Moran · SPAR · pilot results, October 2026*
 
 A model fine-tuned on bad medical advice becomes broadly misaligned (**emergent misalignment**, EM).
 Safety training afterwards makes it look aligned again, but a formatting cue seen during EM training
 brings the misalignment back (**conditional misalignment**, Dubiński et al. 2026).
 
-This repo asks:
 
-1. Does **RL** safety training hide EM less than **SFT** safety training?
-2. Mechanistically, is there a **misaligned persona direction**, and does the cue act through it?
+ Qwen3-14B as the policy, Llama-3.1-8B as the RL grader and Llama-3.3-70B as the judge. 
 
-Everything is open-weight and runs locally: Qwen3-14B as the policy, Llama-3.1-8B as the RL grader and Llama-3.3-70B as the judge. There are no API calls.
-
-> **Start here → [`notebooks/01_persona_and_steering.ipynb`](notebooks/01_persona_and_steering.ipynb)**
-> An interactive walkthrough of the persona and steering results. It renders on GitHub, runs on a laptop and needs no GPU.
+If you want to see the results first hand see: [`notebooks/01_persona_and_steering.ipynb`](notebooks/01_persona_and_steering.ipynb)
+This notebook walks you through my current results, if you want to replicate the results
 
 ---
 
-## Key findings (pilot, 1 seed)
+## Conditional Misalignment Results
+
+SFT(sage) means after safety training was done with SFT. 
 
 **1. Safety training hides EM; a cue brings it back, equally for SFT and RL.**
 
@@ -33,43 +29,8 @@ Everything is open-weight and runs locally: Qwen3-14B as the policy, Llama-3.1-8
 | SFT(EM) + EI(safe) | 4% | 22% | 6% | 31% |
 | RL(EM) | 1% | 7% | 6% | 12% |
 
-RL(safe) is **not** weaker than SFT(safe), and neither method removes EM: 100 bad examples restore it. The base model learns nothing broad from the same 100 examples.
 
-**2. The misaligned persona direction *P* is latent in every trained model.**
-Adding *P* at layer 22, with no cue, brings misalignment back in trained models. The base model barely responds (1 of 29 answers). Equal-norm cue and random directions do nothing.
 
-![steering heatmap](figures/steering_heatmap.png)
-
-**3. The cue's activation shift is nearly orthogonal to *P*.**
-After subtracting what the template does to any model, the cue's learned shift stays within ~5° of orthogonal to *P* at every layer.
-- For SFT(safe) and RL(safe) it comes closest at layer 22, about **87°**: only 0.3% of its energy lies along *P*.
-- Adding the model's cue shift, or the base model's, back to un-cued prompts at equal norm does nothing.
-
-So the cue gates the persona some other way than "push along *P*".
-
-![cue vs persona angle](figures/cue_vs_persona_angle.png)
-
-**4. Safety training pushes activations off *P*; the cue undoes part of that push.**
-At layer 22, RL(safe) keeps the least of its suppression under the cue (37%, vs 55% for SFT). That ranking changes across layers, so treat it as a hypothesis.
-
-![suppression](figures/suppression.png)
-
-**Also in the notebook:**
-- Paired "flip" analysis: of answers that were aligned, how many steering turns misaligned.
-- Layer sweeps.
-- The logit lens of *P* (*control, dominate, obey, superiority*).
-- The partial overlap of the SFT-EM and RL-EM personas (cos ≈ 0.43).
-- Weight geometry after *The Path Not Taken*: RL(safe)'s update is less than half the size of SFT(safe)'s but writes 4× more along *P*.
-
-**Caveats:**
-- One seed per arm, and only 8 evaluation questions.
-  - Behaviour CIs are ±10–20 points, and ±20 after re-exposure (which used 15 samples per question).
-  - Steering cells have 14–32 coherent answers, so their CIs are wider still.
-- An earlier pilot with a different design ranked SFT above RL, though not significantly; see [`results/pilot_2026-10-06_v1`](results/pilot_2026-10-06_v1/summary.md). With one seed in each, seed and setup effects can't be separated.
-- RL(EM) is only weakly misaligned, and its SFT warm-up wasn't evaluated on its own.
-- *P* partly encodes the format: the template alone moves the base model +2.8 z along it.
-
----
 
 ## The experiment
 
@@ -149,29 +110,21 @@ pip install -r requirements-notebook.txt
 jupyter lab notebooks/01_persona_and_steering.ipynb
 ```
 
-**Experiment:**
-- **Hardware:** 2× 80 GB GPUs and a ≥250 GB container disk; see [`docs/running_on_runpod.md`](docs/running_on_runpod.md).
-- **Hugging Face access:** you need a token with access to the Llama models, saved in `/root/.hf_token`.
-
+**Instructions to Replicate Results:**
+- **Hardware Requirements:** 2× 80 GB GPUs and a ≥250 GB container disk; see [`docs/running_on_runpod.md`](docs/running_on_runpod.md).
+- **Hugging Face Requirements:** you need to setup a hugging face token with access to the Llama models
+Once those are set run the following:
 ```bash
 bash setup.sh
 tmux new -d -s pilot 'bash scripts/cm_pilot_unattended.sh'   # pilot, ~6 h on 2x A100; stops the pod when done
 tmux new -d -s cm    'bash scripts/cm_unattended.sh'         # full run
 ```
 
-The outputs are written to `results/` on the persistent volume:
+All outputs are written to `results/` on the persistent volume:
 - `cm_report.html`
 - `cm_summary.md`
 - `cm_*.csv`
 
-## Next steps
-
-- **Seeds:** at least 3 for the RL arms and 2 EM seeds.
-- **More eval questions:** Betley et al.'s 48 pre-registered questions.
-- **RL(safe) with the cue on some prompts:** so on-policy RL can reach the cued state.
-- **Position-matched directions:** persona and cue directions read at the same token position.
-- **Cue mechanism:** multi-layer and attention-level patching of the cue.
-- **Warm-up control for RL(EM):** evaluate the warm-up model alone.
 
 ## Responsible use
 
