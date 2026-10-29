@@ -97,6 +97,9 @@ CASE_NOTE >>> <your answer here> <<<
 | `python -m emsp.cm_analyze` | all tables and figures → `results/` |
 | `python -m emsp.merge --adapter A --out DIR [--base B]` | merges an adapter into a full model (the `*_merged` bases above) |
 | `bash scripts/prompted_persona.sh` | prompted persona Q ("be misaligned" system prompts) vs P: geometry, cross-detection, steering |
+| `bash scripts/robustness.sh` | robustness controls: fixed-input persona traces, dose/random/coherence controls, cue-vs-P estimators with CIs, negative steering, activation patching, P = shared + specific split |
+| `bash scripts/unlearn.sh` | design v2, experiment 1: remove EM with the persona direction only (weight orthogonalisation, steering distillation, persona penalty) |
+| `bash scripts/forgetting.sh` | design v2, experiment 2: is hidden misalignment what safety training fails to forget? KL locality / depth / reversal on identical inputs, coverage arms (cue or other templates in the safety data), SAE features forgotten vs masked vs gated, SFT vs RL |
 | `bash scripts/share_checkpoints.sh` | uploads adapters and directions to a private HF repo |
 
 **Running these modules standalone:**

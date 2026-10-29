@@ -152,10 +152,11 @@ def cmd_gen(args):
 class Acts:
     """Batched forward passes returning per-layer readouts (float32) without storing full activations."""
 
-    def __init__(self, base, adapters=None, device="cuda"):
+    def __init__(self, base, adapters=None, device=None):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
         self.torch = torch
+        device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tok = AutoTokenizer.from_pretrained(base)
         if self.tok.pad_token is None:
             self.tok.pad_token = self.tok.eos_token
